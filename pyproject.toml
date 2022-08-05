@@ -1,0 +1,10 @@
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = true
+ignore-module = true
+ignore-setters = true
+fail-under = 100
+exclude = ["setup.py", "docs", "build", "tests"]
+ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*", "^test_*"]
+verbose = 2
+quiet = false

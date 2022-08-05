@@ -1,0 +1,7 @@
+[flake8]
+max-line-length = 120
+max-complexity = 18
+count = True
+indent-size = 4
+statistics = True
+jobs = 4
