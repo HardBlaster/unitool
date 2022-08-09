@@ -27,10 +27,11 @@ def rotate_point(point: Point2d, around: Point2d, angle: float) -> tuple:
     :return: x and y coordinates after rotation.
     """
     translated_point = Point2d(point.x - around.x, point.y - around.y)
-    sin_alpha, cos_alpha = np.sin(angle), np.cos(angle)
+    rad = np.deg2rad(angle)
+    sin_alpha, cos_alpha = np.sin(rad), np.cos(rad)
 
-    return int(cos_alpha * translated_point.x - sin_alpha * translated_point.y + around[0]), int(
-        sin_alpha * translated_point.x + cos_alpha * translated_point.y + around[1])
+    return int(cos_alpha * translated_point.x - sin_alpha * translated_point.y + around.x), int(
+        sin_alpha * translated_point.x + cos_alpha * translated_point.y + around.y)
 
 
 def angle_3points(A: Point2d, B: Point2d, C: Point2d):
@@ -42,6 +43,6 @@ def angle_3points(A: Point2d, B: Point2d, C: Point2d):
     :param C: endpoint.
     :return: angle in degrees.
     """
-    angl = np.degrees(np.atan2(C.y - B.y, C.x - B.x) - np.atan2(A.y - B.y, A.x - B.x))
+    angl = np.degrees(np.arctan2(C.y - B.y, C.x - B.x) - np.arctan2(A.y - B.y, A.x - B.x))
 
     return angl + 360 if angl < 0 else angl
