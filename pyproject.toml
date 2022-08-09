@@ -5,6 +5,6 @@ ignore-module = true
 ignore-setters = true
 fail-under = 100
 exclude = ["setup.py", "docs", "build", "tests"]
-ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*", "^test_*"]
+ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*", "^test_*", "^Test*"]
 verbose = 2
 quiet = false
