@@ -1,4 +1,9 @@
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.2.0
+    hooks:
+      - id: check-added-large-files
+
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.8.4
     hooks:
@@ -13,3 +18,13 @@ repos:
     rev: 1.4.0
     hooks:
         - id: interrogate
+
+  - repo: local
+    hooks:
+    -   id: unittest
+        name: unittest
+        entry: py -m unittest discover
+        language: python
+        'types': [python]
+        additional_dependencies: ["numpy", "pandas"]
+        pass_filenames: false

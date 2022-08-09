@@ -23,6 +23,6 @@ def test_rotate_point():
 def test_angle_3points():
     assert angle_3points(Point2d(-1, 0), Point2d(0, 0), Point2d(1, 0)) == 180
     assert angle_3points(Point2d(0, 1), Point2d(0, 0), Point2d(0, -1)) == 180
-    assert angle_3points(Point2d(0, 1), Point2d(0, 0), Point2d(1, 0)) == 90
+    assert angle_3points(Point2d(0, 1), Point2d(0, 0), Point2d(1, 0)) == 270
     assert angle_3points(Point2d(1, 0), Point2d(0, 0), Point2d(0, -1)) == 270
     assert angle_3points(Point2d(1, 1), Point2d(0, 0), Point2d(0, -1)) == 225
