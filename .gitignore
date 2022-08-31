@@ -1,5 +1,4 @@
 .pytest_cache/
-/test_data/
 /universal_tool.egg-info/
 /data/
 .idea/
