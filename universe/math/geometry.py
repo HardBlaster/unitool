@@ -1,9 +1,10 @@
-from collections import namedtuple
+from typing import NamedTuple, Tuple
 
 import numpy as np
 
-Point2d = namedtuple('Point2d', ['x', 'y'])
-Rectangle = namedtuple('Rectangle', ['top_left', 'bottom_right'])
+Point2d = NamedTuple('Point2d', [('x', float), ('y', float)])
+Point3d = NamedTuple('Point3d', [('x', float), ('y', float), ('z', float)])
+Rectangle = NamedTuple('Rectangle', [('top_left', Point2d), ('bottom_right', Point2d)])
 
 
 def dist_2d(p1: Point2d, p2: Point2d) -> float:
@@ -17,7 +18,7 @@ def dist_2d(p1: Point2d, p2: Point2d) -> float:
     return ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
 
 
-def rotate_point(point: Point2d, around: Point2d, angle: float) -> tuple:
+def rotate_point(point: Point2d, around: Point2d, angle: float) -> Tuple[int, int]:
     """
     Rotates a point around another point by an angle.
 
@@ -33,7 +34,7 @@ def rotate_point(point: Point2d, around: Point2d, angle: float) -> tuple:
         sin_alpha * translated_point.x + cos_alpha * translated_point.y + around.y)
 
 
-def angle_3points(A: Point2d, B: Point2d, C: Point2d):
+def angle_3points(A: Point2d, B: Point2d, C: Point2d) -> float:
     """
     Calculates the angle ABC.
 
