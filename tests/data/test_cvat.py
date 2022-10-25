@@ -15,10 +15,10 @@ class TestCvat(unittest.TestCase):
         with open(POLYLINES, 'rb') as pl_file:
             polylines = pkl.load(pl_file)
 
-        self.assertTrue(cvat.load_polylines(ANNOTATIONS) == polylines)
+        self.assertEqual(cvat.load_polylines(ANNOTATIONS), polylines)
 
     def test_load_boxes(self):
         with open(BOXES, 'rb') as box_file:
             boxes = pkl.load(box_file)
 
-        self.assertTrue(cvat.load_boxes(ANNOTATIONS) == boxes)
+        self.assertEqual(cvat.load_boxes(ANNOTATIONS), boxes)

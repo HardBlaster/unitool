@@ -1,14 +1,22 @@
 import sys
-from typing import Union, Optional
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
 
 from universe import random
-from universe.data.common import generate_str_index
+from universe.utils import generate_str_index
 
 
-def random_dataframe(rows: int, columns: Union[int, list, tuple], dtypes: Optional[dict] = None):
+def random_dataframe(rows: int, columns: Union[int, list, tuple], dtypes: Optional[dict] = None) -> pd.DataFrame:
+    """
+    Generates a random pandas dataframe.
+
+    :param rows: number of rows.
+    :param columns: number of columns or list of column names.
+    :param dtypes: dictionary in 'column_name': dtype format.
+    :return: dataframe.
+    """
     if isinstance(columns, int):
         char_count = 26
         columns = generate_str_index(columns // char_count + 1)[:columns]
