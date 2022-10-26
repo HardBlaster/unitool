@@ -3,8 +3,8 @@ from typing import List, Tuple
 import cv2 as cv
 import numpy as np
 
-from universe.iteration import stacked
-from universe.math.geometry import Point2d, Rectangle
+from src.universe.iteration import stacked
+from src.universe.math.geometry import Point2d, Rectangle
 
 
 def draw_rectangles(img: np.ndarray, rectangles: List[Rectangle], color: Tuple[int, int, int] = (0, 255, 0),

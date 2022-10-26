@@ -1,7 +1,7 @@
 import pickle as pkl
 import unittest
 
-from universe.data import cvat
+from src.universe.data import cvat
 
 DATA_BASE_PATH = 'test_data/data/cvat/'
 ANNOTATIONS = DATA_BASE_PATH + 'annotations.xml'

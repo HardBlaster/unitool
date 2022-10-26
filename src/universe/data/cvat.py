@@ -1,8 +1,8 @@
 from typing import Dict, List, Tuple
 from xml.etree import ElementTree as et
 
-from universe.iteration import stacked
-from universe.math.geometry import Point2d
+from src.universe.iteration import stacked
+from src.universe.math.geometry import Point2d
 
 
 def load_polylines(path: str, label: str = None) -> Dict[str, List[List[Point2d]]]:

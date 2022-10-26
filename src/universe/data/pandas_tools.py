@@ -4,8 +4,8 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 
-from universe import random
-from universe.utils import generate_str_index
+from src.universe import random
+from src.universe.utils import generate_str_index
 
 
 def random_dataframe(rows: int, columns: Union[int, list, tuple], dtypes: Optional[dict] = None) -> pd.DataFrame:

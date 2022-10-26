@@ -6,7 +6,7 @@ from typing import List, Tuple, Union
 
 import numpy as np
 
-from universe.utils import reduce_mult
+from src.universe.utils import reduce_mult
 
 LETTERS = list(string.ascii_letters)
 

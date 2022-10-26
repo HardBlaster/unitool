@@ -1,3 +1,26 @@
+[build-system]
+requires = ['setuptools']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'UniTool'
+version = '0.0.1'
+authors = [
+    {name='Hidi Erik', email='hidieric@gmail.com'},
+]
+description = 'TBA'
+readme = 'TBA'
+requires-python = '>=3.8'
+dependencies = [
+    'pandas',
+    'numpy',
+    'matplotlib',
+    'opencv-python',
+]
+
+[tool.setuptools.packages.find]
+exclude = ["src.tests*"]
+
 [tool.interrogate]
 ignore-init-method = true
 ignore-init-module = true
@@ -6,7 +29,7 @@ ignore-module = true
 ignore_private = true
 ignore-setters = true
 fail-under = 100
-exclude = ["setup.py", "docs", "build", "tests"]
-ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*", "^test_*", "^Test*"]
+exclude = ['setup.py', 'docs', 'build', 'tests']
+ignore-regex = ['^get$', '^mock_.*', '.*BaseClass.*', '^test_*', '^Test*']
 verbose = 2
 quiet = false

@@ -2,8 +2,7 @@ import unittest
 
 import numpy as np
 
-from universe.math.geometry import (Point2d, angle_3points, dist_2d,
-                                    rotate_point)
+from src.universe import Point2d, angle_3points, dist_2d, rotate_point
 
 
 class TestGeometry(unittest.TestCase):
