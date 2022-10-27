@@ -19,7 +19,9 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-exclude = ["src.tests*"]
+where = ['src']
+include = ['universe*']
+exclude = ['tests*']
 
 [tool.interrogate]
 ignore-init-method = true
