@@ -13,151 +13,187 @@ DILATE_MATRIX: np.ndarray = np.array([[0, 1, 2, 1, 0],
 def generate_masks_from_plo_coords(plo_coords: np.ndarray,
                                    mask_shape: tuple) -> np.ndarray:
     """
-    Generates plo mask matricies from object coordinates. Output masks will be 0. everywhere, except the given coordiantes,
+    Generates plo mask matrices from object coordinates. Output masks will be 0. everywhere, except the given coordiantes,
     where the output values will be 1.
     
-    We assume input contains all batches, so the assumed shape is liket: (batch_cnt, object_cnt, 3), batch_cnt is the
-    number of images in the batch, object_cnt is the maximum number of objects on one image. The last dimension is 3,
-    here one line defines one object with this format, all values must be float: [y, x, 1.]. The last value is 1.,
-    if there is an object defined on that line. If there are no more objects, all remaining lines should be [0., 0., 0.].
-
+    We assume input contains all batches, so the assumed shape is like: (batch_cnt, object_cnt, 2), batch_cnt is the
+    number of images in the batch, object_cnt is the maximum number of objects on one image. The last dimension is 2,
+    here one line defines one object with this format, all values must be float: [x, y]. If there are no more objects,
+    all remaining lines should be [-1., -1.].
+    
     :param plo_coords: Point-like object coordinates in the format defined above.
-    :param mask_shape: Shape of the output matricies, like (height, width).
-    :return: The generated mask matricies with the shape: (batch_cnt, height, width). Values are 1. where objects are defined,
+    :param mask_shape: Shape of the output matrices, like (height, width).
+    :return: The generated mask matrices with the shape: (batch_cnt, height, width). Values are 1. where objects are defined,
     otherwise zeros.
+    
+    Examples
+    --------
+    # Example point-like object matrix:
+    # We have maximum 6 objects, 3 presents on this image.
+    # Coordinates must be in the following format: [horizontal_coord, vertical_coord], indexed from 0.
+    >>> plom = np.array([[12., 23.],
+                        [34., 45.],
+                        [56., 67.],
+                        [-1., -1.],
+                        [-1., -1.],
+                        [-1., -1.]])
     """ 
+    
+    # TODO rewrite in torch, use sparse matrix constructor
+    
     # Assume to use with a batch
-    assert len(plo_coords.shape) > 2, 'Input shape should be at least 3d, first one is the batch size.'
-
-    # TODO what if there is no batch
+    assert len(plo_coords.shape) >= 2, 'Input shape should be at least 3d (2d in case of lacking th batch dimension).'
+    
+    # if no batch dimension found simply add it
+    if len(plo_coords.shape) == 2:
+        plo_coords = plo_coords[np.newaxis, :]
+        
     masks = np.zeros((plo_coords.shape[0],) + mask_shape)
     plo_coords_int = np.around(plo_coords).astype(int)
-    max_x = int(mask_shape[0] - 1.)
-    max_y = int(mask_shape[1] - 1.)
+    max_x = mask_shape[0] - 1
+    max_y = mask_shape[1] - 1
     for image_idx, image_plo_coords in enumerate(plo_coords_int):
         for coords in image_plo_coords:
-            if coords[2] == 0.:
+            if coords[0] == -1:
                 break
             masks[image_idx, min(coords[1], max_y), min(coords[0], max_x)] = 1.
 
     return masks
 
-# TODO add some disk-shape weight to be more exact-distance like
-def point_like_nms(plo_mask_preds: np.ndarray,
-                   supression_dist: int = -1) -> np.ndarray:
+def point_like_nms(mask_preds: np.ndarray,
+                   suppression_dist: int = -1) -> np.ndarray:
     """
     Non-max suppression function written in tensorflow for point-like object masks.
     
     For now the distance is approximated with a simple square with the actual point in the middle.
-    ( Later a circural weight must be added to calculate with real distances )
+    ( Later a circular weight must be added to calculate with real distances )
 
-    :param plo_mask_preds: Predicted plo mask, values assumed to be logits, float numbers in 0..1, and shape to be like (height, width)
-    :param supression_dist: Supression distance to use, this is the actual pixel distance. It must be an odd number
-    (but the code handles it), default value is 10 % of the original width, if supression_dist is -1.
-    :return: The supressed mask. Supressed values become zeros, other values keep their original values.
+    :param mask_preds: Predicted plo mask, values assumed to be logits, float numbers in 0..1, and shape to be like (height, width)
+    :param suppression_dist: Suppression distance to use, this is the actual pixel distance. It must be an odd number
+    (but the code handles it), default value is 10 % of the original width, if suppression_dist is -1.
+    :return: The suppressed mask. Suppressed values become zeros, other values keep their original values.
+    
+    Examples
+    --------
+    # This helps to understand the point like non max suppression:
+    >>> m = tf.constant([[1, 2, 3, 8],
+                        [7, 8, 9, 3],
+                        [4, 5, 3, 2],
+                        [7, 2, 2, 9]])
+    >>> m_r = m[tf.newaxis, :, :, tf.newaxis]
+    >>> res = tf.nn.max_pool2d(m_r, ksize=(3, 3), strides=(1, 1), padding=[[0, 0], [1, 1], [1, 1], [0, 0]])
+    >>> res_o = tf.reshape(res, (4, 4))
+    >>> tf.where((res_o == m), m, tf.zeros_like(m, dtype=tf.int32))
+    <tf.Tensor: shape=(4, 4), dtype=int32, numpy=
+    array([[0, 0, 0, 0],
+           [0, 0, 9, 0],
+           [0, 0, 0, 0],
+           [7, 0, 0, 9]], dtype=int32)>
     """ 
     
-    # For the sake of simplicity we use a box with the point in center, not exact distance for the supression
-    
+    # For the sake of simplicity we use a box with the point in center, not exact distance for the suppression
+    # TODO add some disk-shape weight to be more exact-distance like
+
     # we assume here simple 2d data, with shape like (512, 512)
-    assert len(plo_mask_preds.shape) == 2, 'Input shape should be 2d.'
+    assert len(mask_preds.shape) == 2, 'Input shape should be 2d.'
     
-    # TODO prepare some proper supression distance... for now we use 10th of the width of the image
-    if supression_dist == -1:
-        supression_dist = (plo_mask_preds.shape[1] // 10)
+    # TODO prepare some proper suppression distance... for now we use 10th of the width of the image
+    if suppression_dist == -1:
+        suppression_dist = (mask_preds.shape[1] // 10)
     
     # Suppression distance must be odd to generate the same size of maxpooling output as input
-    supression_dist += (supression_dist % 2) == 0
+    # TODO rewrite to be more self-explanetory
+    suppression_dist += 1 - (suppression_dist % 2)
     # Padding size should reflect the suppression distance
-    padding_size = (supression_dist - 1) // 2
+    padding_size = (suppression_dist - 1) // 2
     
-    preds_reshaped = plo_mask_preds[tf.newaxis, :, :, tf.newaxis]
+    preds_reshaped = mask_preds[tf.newaxis, :, :, tf.newaxis]
     res_reshaped = tf.nn.max_pool2d(preds_reshaped,
-                                    ksize=(supression_dist, supression_dist),
+                                    ksize=(suppression_dist, suppression_dist),
                                     strides=(1, 1),
                                     padding=[[0, 0],
                                              [padding_size, padding_size],
                                              [padding_size, padding_size],
                                              [0, 0]])
-    shape_origi = tf.shape(plo_mask_preds)
+    shape_origi = tf.shape(mask_preds)
     result = tf.reshape(res_reshaped,
                         (shape_origi[0], shape_origi[1]))
-    plo_nms = tf.where((result == plo_mask_preds),
-                       plo_mask_preds,
-                       tf.zeros_like(plo_mask_preds, dtype=tf.float32))
+    plo_nms = tf.where((result == mask_preds),
+                       mask_preds,
+                       tf.zeros_like(mask_preds, dtype=tf.float32))
     
     # TODO: check threashold, NOT equality, this way we will be able to keep good, but nearby predictions !!
     
     return plo_nms 
 
-# Plo nms related code snippets, copy somewhere and run !
-# # #
-# To understand the point like non max supression, here is an example
-# frt = tf.constant([[1, 2, 3, 8],
-#                    [7, 8, 9, 3],
-#                    [4, 5, 3, 2],
-#                    [7, 2, 2, 9]])
-# frt_r = frt[tf.newaxis, :, :, tf.newaxis]
-# result = tf.nn.max_pool2d(frt_r, ksize=(3, 3),
-#                           strides=(1, 1),
-#                           padding=[[0, 0], [1, 1], [1, 1], [0, 0]])
-# result_o = tf.reshape(result, (4, 4))
-# tf.where((result_o == frt),
-#          frt,
-#          tf.zeros_like(frt, dtype=tf.int32))
-# # #
-# To meausure how fast is the point like non max supression
-# alap = np.random.rand(10240, 10240)
-# nms = plo.point_like_nms(alap, supression_dist=200)
-# y, idx, count = tf.unique_with_counts(tf.reshape(nms, -1))
-# print(y, count)
+def filter_plo_preds(pred_masks: np.ndarray,
+                     plo_nms_suppression_dist: int = 0,
+                     threshold: float = 0.,
+                     keep_max_n_best: int = 0) -> np.ndarray:
+    """
+    Filter predicted plo masks according to the given parameters.
+    
+    :param plo_nms_suppression_dist: Use the point-like non-max suppression with the given distance in pixels.
+    If it is 0, plo nms will not be called. If it is -1, plo nms will be called with default distance.
+    Default value is 0.
+    :param threshold: Threshold to cut down unwanted predictions. Only used if there is a model given.
+    All values below become zero, all value equals or above become 1. Default value is 0.
+    :param keep_max_n_best: Keep only the best n predictions. Only used if there is a model given. This means
+    that it will keep only the best predictions, all others will be suppressed. If used together with threshold,
+    the given threshold will be applied after, so it can further suppress values from the predictions.
+    Default value is 0, which means all predictions are kept.
+    :return: The filtered out array of masks. Shape is the same as the input.
+    """
+    # Assume to use with a batch
+    assert len(pred_masks.shape) > 2, 'Input shape should be at least 3d, first one is the batch size.'
+    
+    filtered_plo_list = []
+    
+    for pred in pred_masks.numpy():
+        max_n_threshold = 0.
 
+        if plo_nms_suppression_dist != 0:
+            pred = point_like_nms(np.squeeze(pred),
+                                  suppression_dist=plo_nms_suppression_dist).numpy()
+        if keep_max_n_best > 0:
+            max_n_threshold = np.sort(pred.flat)[-keep_max_n_best - 1]
+        if threshold > 0. or max_n_threshold > 0.:
+            _, pred = cv2.threshold(pred,
+                                    max(threshold, max_n_threshold),
+                                    1., cv2.THRESH_BINARY)
+        filtered_plo_list.append(pred)
 
-# visualization for the point-like annotations and predictions
+    return np.array(filtered_plo_list)
+
 def visualize_plo_mask(images: np.ndarray,
-                       masks: np.ndarray,
-                       cnt: int = -1,
-                       model: tf.keras.Model = None,
+                       gt_masks: np.ndarray,
+                       pred_masks: np.ndarray = None,
                        fade_original: float = .6,
-                       use_point_like_nms: bool = False,
-                       threshold: float = 0.,
-                       keep_max_n_best: int = 0,
                        dilate_interations: int = 2,
                        show_grid_step: int = 0):
     """
     Visualization for point-like object masks using matplotlib.
     Print out samples, one sample by row. In each row there are two images, on the left the original image.
     On the right the image faded out, and the point-like objects added on top of it. The defined masks are added
-    in red color, dilated up by number defined in the dilate_interations param. If model is defined,
-    the predicted objects are added in green color. Therefore the matching points will be yellow.
+    in red color, dilated up by the number defined in the dilate_interations param. If prediction is defined,
+    it will be added in green color. Therefore the matching points will be yellow.
 
-    :param images: The original images with the shape of (batch_cnt, height, width, channerls)
-    :param masks: The plo masks (usually the ground truth), the shape assumed like (batch_cnt, height, width)
-    :param cnt: How many images should be visulazied, the first cnt number of images will be used from the batch.
-    Default value is -1, which means all images will be visualized from the given batch.
-    :param model: The model to be used to predict plo masks. If not given, predictions won't be added.
+    :param images: The original images with the shape of (batch_cnt, height, width, channels)
+    :param gt_masks: The plo masks (usually the ground truth), the shape assumed like (batch_cnt, height, width)
+    :param pred_masks: The predicted masks (usually the prediction), the shape must be the same as gt_masks shape.
     :param fade_original: Float multiplier, how much the original image should be faded out in the second column.
     Default value is 0.6, this keeps the image still visible, but also gives more visibility to the object points.
-    :param use_point_like_nms: Use point-like non-max supression, or not. Default value is False.
-    :param threashold: Threshold to cut down unwanted predictons. Only used if there is a model given.
-    All values below becomes to zero, all value equals or above becomes 1. Default value is 0.
-    :param keep_max_n_best: Keep only the best n predictions. Only used if there is a model given. This means
-    that it will keep only the best predictions, all other will be supressed. If used together with threashold,
-    the given threashold will be applied after, so it can further supress values from the predictions.
-    Default value is 0, which means all predictions are kept.
     :param dilate_interations: To have a better visual of point-like  objects, points can be dilated up, by
     the number of iterations given here in this parameter. Default value is 2 which is an optimal solution for
     dimensions around 500.
     :param show_grid_step: Int value, add grid to the image, using this step number given here used as pixels.
     Default value is 0, which means no grid will be added to the images in the second column.
     :return:
-    """  
-    
-    if cnt == -1:
-        cnt = len(images)
+    """
         
-    if model:
-        pred = model(images)
+    cnt = len(images)
+    
+    # assert, all imags, masks should have the same dimensions
     
     fig, ax = plt.subplots(cnt, 2, figsize=(20, (10 * cnt)))
     for i in range(cnt):
@@ -169,27 +205,15 @@ def visualize_plo_mask(images: np.ndarray,
         ax[i, 0].imshow((input_image.squeeze()))
 
         # Ground truth
-        target_1d = masks[i]                
+        target_1d = gt_masks[i]                
         target_1d = cv2.dilate(target_1d, DILATE_MATRIX, iterations=dilate_interations)
         target_image = target_image * fade_original
         target_image[..., 0] = np.clip(target_image[..., 0] + target_1d, 0., 1.)
         
         # Prediction if needed
-        if model:
-            pred_1d = pred[i].numpy()
-            max_n_threshold = 0.
-            
-            if use_point_like_nms:
-                pred_1d = point_like_nms(np.squeeze(pred_1d)).numpy()
-            if keep_max_n_best > 0:
-                max_n_threshold = np.sort(pred_1d.flat)[-keep_max_n_best - 1]
-            if threshold > 0. or max_n_threshold > 0.:
-                _, pred_1d = cv2.threshold(pred_1d,
-                                           max(threshold, max_n_threshold),
-                                           1., cv2.THRESH_BINARY)
-                
+        if np.any(pred_masks):
+            pred_1d = pred_masks[i]                
             pred_1d = cv2.dilate(pred_1d, DILATE_MATRIX, iterations=dilate_interations)
-            # Add the predictions to the target image as a new layer
             target_image[..., 1] = np.clip(target_image[..., 1] + pred_1d, 0., 1.)
 
         ax[i, 1].imshow((target_image.squeeze()))
