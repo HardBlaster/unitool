@@ -7,7 +7,7 @@ Point3d = NamedTuple('Point3d', x=float, y=float, z=float)
 
 class Point2d:
     """
-    Represents a 2 dimensional point.
+    Represents a 2-dimensional point.
     """
 
     def __init__(self, x: float, y: float):
@@ -16,6 +16,9 @@ class Point2d:
 
     def __str__(self):
         return f'{self.x=}, {self.y=}'
+
+    def __repr__(self):
+        return f'({self.x}, {self.y})'
 
     def __eq__(self, other: 'Point2d') -> bool:
         return self.x == other.x and self.y == other.y
@@ -41,7 +44,7 @@ class Point2d:
 
 class Line2d:
     """
-    Represents a 2 dimensional line between two points.
+    Represents a 2-dimensional line between two points.
     """
 
     def __init__(self, a: Point2d, b: Point2d):
@@ -50,6 +53,9 @@ class Line2d:
 
     def __eq__(self, other: 'Line2d') -> bool:
         return (self.a == other.a and self.b == other.b) or (self.a == other.b and self.b == other.a)
+
+    def __repr__(self):
+        return f'{self.a}, {self.b}'
 
     def direction_to_point(self, point: Point2d) -> float:
         """
@@ -61,7 +67,7 @@ class Line2d:
         point is in the counter-clockwise direction (on the top of the line) of the line 'ab' the value is negative, it
         is positive otherwise.
 
-        :param point: 2 dimensional point.
+        :param point: 2-dimensional point.
         :return: +-2 * the distance between the point end the point's projection on the line.
         """
         # TODO: rename it
@@ -71,7 +77,7 @@ class Line2d:
         """
         Checks if the given point is on the area of the rectangle having the line as diagonal.
 
-        :param point: 2 dimensional point.
+        :param point: 2-dimensional point.
         :return: true if 'point' is on the area of the rectangle, false otherwise.
         """
         # TODO: maybe rename it
@@ -82,8 +88,8 @@ class Line2d:
         """
         Check if 'line' intersects the line.
 
-        :param line: 2 dimensional line.
-        :param endpoints: if true intersections count on line endings (an endpoint is on the other line).
+        :param line: 2-dimensional line.
+        :param endpoints: if true, the function returns true if the lines intersect at the endpoints.
         :return: true if the lines intersect, false otherwise.
         """
         # TODO: check if the function works, when the two lines have the same line function, but the Line2d objects
@@ -117,7 +123,7 @@ class LineFunction:
         """
         Calculates the intersection point of 'line'.
 
-        :param line: 2 dimensional line function.
+        :param line: 2-dimensional line function.
         :return: point of intersection if it exists.
         """
         pass
@@ -126,7 +132,7 @@ class LineFunction:
         """
         Moves 'point' on the line by the given distance.
 
-        :param point: 2 dimensional point.
+        :param point: 2-dimensional point.
         :param dist: distance to the target position.
         :return: point 'dist' units away from 'point' on the line.
         """
@@ -136,7 +142,7 @@ class LineFunction:
         """
         Checks if 'line' is parallel.
 
-        :param line: 2 dimensional line function.
+        :param line: 2-dimensional line function.
         :return: true if the given line is parallel, false otherwise.
         """
         pass
@@ -145,7 +151,7 @@ class LineFunction:
         """
         Creates a perpendicular line and which through 'point'.
 
-        :param point: 2 dimensional point.
+        :param point: 2-dimensional point.
         :return: perpendicular line function.
         """
         pass
@@ -185,6 +191,9 @@ class XLine2dFunction(LineFunction):
     def __str__(self):
         return f'x={self.c}'
 
+    def __repr__(self):
+        return self.__str__()
+
     def calculate_y(self, x: float) -> None:
         """
         Raises error, since x=c function has no single y value.
@@ -199,7 +208,7 @@ class XLine2dFunction(LineFunction):
         """
         Creates a line function which represents a perpendicular line and goes through 'point'.
 
-        :param point: 2 dimensional point.
+        :param point: 2-dimensional point.
         :return: perpendicular line function.
         """
         return YLine2dFunction(m=.0, c=point.y)
@@ -208,7 +217,7 @@ class XLine2dFunction(LineFunction):
         """
         Checks if 'line' is parallel.
 
-        :param line: 2 dimensional line function.
+        :param line: 2-dimensional line function.
         :return: true if the given line is parallel, false otherwise.
         """
         return type(line) == XLine2dFunction
@@ -217,7 +226,7 @@ class XLine2dFunction(LineFunction):
         """
         Moves 'point' on the line by the given 'dist' units if the line goes through 'point', raises error otherwise.
 
-        :param point: 2 dimensional point.
+        :param point: 2-dimensional point.
         :param dist: distance to the target position.
         :return: point 'dist' units away from 'point' on the line.
         """
@@ -229,9 +238,9 @@ class XLine2dFunction(LineFunction):
     def intersection(self, line: Union['XLine2dFunction', 'YLine2dFunction']) -> Optional[Point2d]:
         """
         Calculates the intersection point of 'line'. If 'line' is x = c type of function it does not intersect with the
-        line, since they are parallel or they are the same line. In this case the returned value is None.
+        line, since they are parallel, or they are the same line. In this case the returned value is None.
 
-        :param line: 2 dimensional line function.
+        :param line: 2-dimensional line function.
         :return: point of intersection if it exists.
         """
         # TODO: should it raise an error instead? like in calculate_y
@@ -253,12 +262,15 @@ class YLine2dFunction(LineFunction):
     def __str__(self):
         return f'y = {self.m}x + {self.c}'
 
-    @property
-    def norm_vec(self) -> Point2d:
-        """
-        Calculates the normal vector of the line.
+    def __repr__(self):
+        return self.__str__()
 
-        :return: normal vector.
+    @property
+    def dir_vec(self) -> Point2d:
+        """
+        Calculates the direction vector of the line.
+
+        :return: direction vector.
         """
         p1 = Point2d(0, self.c)
         p2 = Point2d(1, self(1))
@@ -279,42 +291,43 @@ class YLine2dFunction(LineFunction):
         """
         Creates a line function which represents a perpendicular line and goes through 'point'.
 
-        :param point: 2 dimensional point.
+        :param point: 2-dimensional point.
         :return: perpendicular line function.
         """
         return XLine2dFunction(c=point.x) if not self.m else YLine2dFunction(m=-1 / self.m,
-                                                                             c=point.y - self.m * point.x)
+                                                                             c=point.y - (-1 / self.m) * point.x)
 
     def is_parallel(self, line: 'YLine2dFunction') -> bool:
         """
         Checks if 'line' is parallel.
 
-        :param line: 2 dimensional line function.
+        :param line: 2-dimensional line function.
         :return: true if the given line is parallel, false otherwise.
         """
-        # TODO: do identical lines count as parallel? (samo goes for X line).
+        # TODO: do identical lines count as parallel? (same goes for X line).
         return type(line) == YLine2dFunction and self.m == line.m
 
-    def move_point(self, point: Point2d, dist: float) -> Point2d:
+    def move_point(self, point: Point2d, dist: float, eps = 1e-5) -> Point2d:
         """
         Moves 'point' on the line by the given 'dist' units if the line goes through 'point', raises error otherwise.
 
-        :param point: 2 dimensional point.
+        :param point: 2-dimensional point.
         :param dist: distance to the target position.
+        :param eps: epsilon for floating point comparison. (default: 0.00001)
         :return: point 'dist' units away from 'point' on the line.
         """
-        if point.y != self(point.x):
-            raise ValueError(f'Point {point=} is not on line {self=}')
+        if abs(point.y - self(point.x)) > eps:
+            raise ValueError(f'Point {point} is not on line {self}')
 
-        norm_vec = self.norm_vec
+        dir_vec = self.dir_vec
 
-        return Point2d(point.x + dist * norm_vec.x, dist * norm_vec.y)
+        return Point2d(point.x + dist * dir_vec.x, point.y + dist * dir_vec.y)
 
     def intersection(self, line: Union[XLine2dFunction, 'YLine2dFunction']) -> Optional[Point2d]:
         """
         Calculates the intersection point of 'line'. If the two lines are parallel None is returned.
 
-        :param line: 2 dimensional line function.
+        :param line: 2-dimensional line function.
         :return: point of intersection if it exists.
         """
         if type(line) == XLine2dFunction:
