@@ -14,9 +14,6 @@ class Point2d:
         self.x = x
         self.y = y
 
-    def __str__(self):
-        return f'{self.x=}, {self.y=}'
-
     def __repr__(self):
         return f'({self.x}, {self.y})'
 
@@ -188,11 +185,8 @@ class XLine2dFunction(LineFunction):
     Class for representing lines parallel to the Y-axis: x = c.
     """
 
-    def __str__(self):
-        return f'x={self.c}'
-
     def __repr__(self):
-        return self.__str__()
+        return f'x = {self.c}'
 
     def calculate_y(self, x: float) -> None:
         """
