@@ -14,8 +14,11 @@ class Point2d:
         self.x = x
         self.y = y
 
-    def __repr__(self):
+    def __str__(self):
         return f'({self.x}, {self.y})'
+
+    def __repr__(self):
+        return f'Point2d({self.x}, {self.y})'
 
     def __eq__(self, other: 'Point2d') -> bool:
         return self.x == other.x and self.y == other.y
@@ -51,8 +54,11 @@ class Line2d:
     def __eq__(self, other: 'Line2d') -> bool:
         return (self.a == other.a and self.b == other.b) or (self.a == other.b and self.b == other.a)
 
-    def __repr__(self):
+    def __str__(self):
         return f'{self.a}, {self.b}'
+
+    def __repr__(self):
+        return f'Line2d(a={self.a}, b={self.b})'
 
     def direction_to_point(self, point: Point2d) -> float:
         """
@@ -110,6 +116,7 @@ class LineFunction:
     """
     Parent class for abstractions purposes.
     """
+
     def __init__(self, c: float = .0):
         self.c = c
 
@@ -185,8 +192,11 @@ class XLine2dFunction(LineFunction):
     Class for representing lines parallel to the Y-axis: x = c.
     """
 
-    def __repr__(self):
+    def __str__(self):
         return f'x = {self.c}'
+
+    def __repr__(self):
+        return f'XLine2dFunction(c={self.c})'
 
     def calculate_y(self, x: float) -> None:
         """
@@ -257,14 +267,14 @@ class YLine2dFunction(LineFunction):
         return f'y = {self.m}x + {self.c}'
 
     def __repr__(self):
-        return self.__str__()
+        return f'YLine2dFunction(m={self.m}, c={self.c})'
 
     @property
     def dir_vec(self) -> Point2d:
         """
-        Calculates the direction vector of the line.
+        Calculates the normalized direction vector of the line.
 
-        :return: direction vector.
+        :return: normalized direction vector.
         """
         p1 = Point2d(0, self.c)
         p2 = Point2d(1, self(1))
@@ -301,7 +311,7 @@ class YLine2dFunction(LineFunction):
         # TODO: do identical lines count as parallel? (same goes for X line).
         return type(line) == YLine2dFunction and self.m == line.m
 
-    def move_point(self, point: Point2d, dist: float, eps = 1e-5) -> Point2d:
+    def move_point(self, point: Point2d, dist: float, eps=1e-5) -> Point2d:
         """
         Moves 'point' on the line by the given 'dist' units if the line goes through 'point', raises error otherwise.
 
