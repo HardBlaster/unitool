@@ -203,7 +203,7 @@ class LayeredImage:
         for layer in self.layers:
             if layer.name:
                 legend.append(mpatches.Patch(color=[x / 255 for x in layer.color], label=layer.name))
-        if len(legend) > 0:
+        if legend:
             plt.legend(handles=legend, loc='lower right')
 
         if title:
