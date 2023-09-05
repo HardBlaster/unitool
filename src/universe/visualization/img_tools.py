@@ -1,4 +1,5 @@
-from typing import List, Tuple
+from abc import abstractmethod, ABC
+from typing import List, Tuple, Optional
 import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt, patches as mpatches
@@ -19,12 +20,13 @@ def rotate(img: np.ndarray, angle: float) -> np.ndarray:
 
     return cv.warpAffine(img, rot_mat, (cols, rows))
 
-class _Layer:
+
+class _Layer(ABC):
     """
     A layer that can be drawn on an image.
     """
 
-    def __init__(self, color: Tuple[int, int, int], opacity: int, name: str = None):
+    def __init__(self, color: Tuple[int, int, int], opacity: float, name: Optional[str] = None):
         """
         Creates a new layer with the given color, opacity and name.
 
@@ -37,16 +39,20 @@ class _Layer:
         self.color = color
         self.name = name
 
-    def set_opacity(self, opacity: int):
+    def set_opacity(self, opacity: float) -> None:
         """
         Sets the opacity of the layer.
 
-        :param opacity: opacity of the layer (0-100)
+        :param opacity: opacity of the layer (0-1)
         """
-        assert 0 <= opacity <= 100, 'Alpha must be between 0 and 100'
+        if not (0. <= opacity <= 1.):
+            print('Opacity must be between 0 and 1')
+            opacity = min(max(0., opacity), 1.)
         self._opacity = opacity
 
-    def draw_on(self, image: cv.Mat) -> cv.Mat: ...
+    @abstractmethod
+    def draw_on(self, image: np.ndarray) -> np.ndarray:
+        ...
 
 
 class LinesLayer(_Layer):
@@ -54,8 +60,8 @@ class LinesLayer(_Layer):
     A layer with lines that can be drawn on an image.
     """
 
-    def __init__(self, lines: List[Line2d], color: Tuple[int, int, int],
-                 endpoints: bool = False, line_width: float = 0.004, opacity: int = 75, name: str = None):
+    def __init__(self, lines: List[Line2d], color: Tuple[int, int, int], endpoints: bool = False,
+                 line_width: float = 0.004, opacity: float = 0.75, name: Optional[str] = None):
         """
         Creates a new layer with the given lines, color, opacity and name.
 
@@ -63,16 +69,17 @@ class LinesLayer(_Layer):
         :param color: color of the lines (RGB)
         :param endpoints: whether to draw circles at the endpoints of the lines
         :param line_width: this value multiplied by the width of the image is the line width in pixels
-        :param opacity: opacity of the lines (0-100)
+        :param opacity: opacity of the lines (0-1)
         :param name: name of the layer
         """
-        assert lines and len(lines) > 0, 'No lines to draw'
+        if not lines:
+            print('No lines to draw' if name is None else f'No lines to draw on layer {name}')
         super().__init__(color, opacity, name)
         self.lines = lines
         self.endpoints = endpoints
         self.line_width = line_width
 
-    def draw_on(self, image: cv.Mat) -> cv.Mat:
+    def draw_on(self, image: np.ndarray) -> np.ndarray:
         """
         Draws the lines on the given image.
 
@@ -87,29 +94,31 @@ class MaskLayer(_Layer):
     A layer with a mask that can be drawn on an image.
     """
 
-    def __init__(self, mask: cv.Mat, color: Tuple[int, int, int], threshold: int = 30, opacity: int = 75,
-                 name: str = None):
+    def __init__(self, mask: np.ndarray, color: Tuple[int, int, int], threshold: int = 30,
+                 opacity: float = 0.75, name: Optional[str] = None):
         """
         Creates a new layer with the given mask, color, opacity and name.
 
         :param mask: mask to draw
         :param color: color of the mask (RGB)
-        :param opacity: opacity of the mask (0-100)
+        :param opacity: opacity of the mask (0-1)
         :param threshold: threshold of the mask (0-255)
         :param name: name of the layer
         """
+        if mask is None:
+            print('No mask to draw' if name is None else f'No mask to draw on layer {name}')
         super().__init__(color, opacity, name)
         self.mask = mask
         self.threshold = threshold
 
-    def draw_on(self, image: cv.Mat) -> cv.Mat:
+    def draw_on(self, image: np.ndarray) -> np.ndarray:
         """
         Draws the mask on the given image.
 
         :param image: image to draw the mask on
         :return: image with the mask drawn on it
         """
-        return draw_mask(image, self.mask, self.color, self.threshold, opacity=self._opacity)
+        return draw_mask(image, self.mask, self.color, self.threshold, self._opacity)
 
 
 class LayeredImage:
@@ -117,13 +126,14 @@ class LayeredImage:
     An image that can have layers drawn on it.
     """
 
-    def __init__(self, image: cv.Mat):
+    def __init__(self, image: np.ndarray):
         """
         Creates a new layered image with the given image. The original image is not modified.
 
         :param image: image to draw the layers on
         """
-        assert image is not None, 'Image does not exist'
+        if image is None:
+            raise ValueError('Image does not exist')
         self._original = image
         self.grayscale = False
         self._darkness = 0
@@ -131,7 +141,7 @@ class LayeredImage:
         self.width = image.shape[1]
         self.height = image.shape[0]
 
-    def set_grayscale(self, grayscale: bool):
+    def set_grayscale(self, grayscale: bool) -> None:
         """
         Sets whether the image should be converted to grayscale.
 
@@ -139,16 +149,18 @@ class LayeredImage:
         """
         self.grayscale = grayscale
 
-    def set_darkness(self, darkness: int):
+    def set_darkness(self, darkness: float) -> None:
         """
         Sets the percentage of darkness of the image.
 
-        :param darkness: percentage of darkness (0-100)
+        :param darkness: percentage of darkness (0-1)
         """
-        assert 0 <= darkness <= 100, 'Darkness percentage must be between 0 and 100'
+        if not (0. <= darkness <= 1.):
+            print('Darkness percentage must be between 0 and 1')
+            darkness = min(max(0., darkness), 1.)
         self._darkness = darkness
 
-    def add_layer(self, layer: _Layer):
+    def add_layer(self, layer: _Layer) -> None:
         """
         Adds the given layer to the image.
 
@@ -157,7 +169,7 @@ class LayeredImage:
         self.layers.append(layer)
 
     @property
-    def image(self) -> cv.Mat:
+    def image(self) -> np.ndarray:
         """
         Returns the image with the layers drawn on it.
 
@@ -178,7 +190,7 @@ class LayeredImage:
             result = cv.resize(result, (self.width, self.height))
         return result
 
-    def plot(self, title: str = None, axis: bool = False):
+    def plot(self, title: Optional[str] = None, axis: bool = False) -> None:
         """
         Shows a matplotlib plot of the image with the given title. Also shows the legend.
 
@@ -210,7 +222,7 @@ class LayeredImage:
         """
         return cv.imwrite(path, cv.cvtColor(self.image, cv.COLOR_RGB2BGR))
 
-    def resize(self, width: int = None, height: int = None):
+    def resize(self, width: Optional[int] = None, height: Optional[int] = None) -> None:
         """
         Resizes the image to the given width and height.
 
@@ -218,35 +230,48 @@ class LayeredImage:
         :param height: new height of the image
         """
         if width:
-            assert width > 0, 'Width must be greater than 0'
-            self.width = width
+            if width <= 0:
+                raise ValueError('Width must be greater than 0')
+            else:
+                self.width = width
         if height:
-            assert height > 0, 'Height must be greater than 0'
-            self.height = height
+            if height <= 0:
+                raise ValueError('Height must be greater than 0')
+            else:
+                self.height = height
 
-    def scale(self, multiplier: float):
+    def scale(self, multiplier: float) -> None:
         """
         Scales the image by the given multiplier.
 
         :param multiplier: multiplier to scale the image by
         """
-        assert multiplier > 0, 'Multiplier must be greater than 0'
+        if multiplier <= 0:
+            raise ValueError('Multiplier must be greater than 0')
+
         self.width = round(self.width * multiplier)
         self.height = round(self.height * multiplier)
 
 
-def grayscale_image(image: cv.Mat) -> cv.Mat:
+def grayscale_image(image: np.ndarray) -> np.ndarray:
     """
-    Converts the given image to grayscale and then to the original color space.
+    Converts the given image to grayscale and then to RGB color space.
 
-    :param image: image to convert
-    :return: grayscale image
+    :param image: image to convert (RGB or grayscale)
+    :return: grayscale image converted to RGB color space
     """
-    assert image is not None, 'Image does not exist'
-    return cv.cvtColor(cv.cvtColor(image, cv.COLOR_RGB2GRAY), cv.COLOR_GRAY2RGB)
+    if image is None:
+        raise ValueError('Image does not exist')
+
+    # if the image is not grayscale, convert it to grayscale
+    if len(image.shape) == 3:
+        image = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+
+    # convert the image to RGB color space
+    return cv.cvtColor(image, cv.COLOR_GRAY2RGB)
 
 
-def darken_image(image: cv.Mat, darkness: int = 50) -> cv.Mat:
+def darken_image(image: np.ndarray, darkness: float = 0.5) -> np.ndarray:
     """
     Darkens the given image.
 
@@ -254,13 +279,17 @@ def darken_image(image: cv.Mat, darkness: int = 50) -> cv.Mat:
     :param darkness: percentage of darkness (0-100)
     :return: darkened image
     """
-    assert image is not None, 'Image does not exist'
-    assert 0 <= darkness <= 100, 'Darkness percentage must be between 0 and 100'
-    return cv.addWeighted(np.zeros_like(image), darkness / 100, image, 1 - darkness / 100, 0)
+    if image is None:
+        raise ValueError('Image does not exist')
+    if not (0. <= darkness <= 1.):
+        print('Darkness percentage must be between 0 and 1')
+        darkness = min(max(0., darkness), 1.)
+
+    return cv.addWeighted(np.zeros_like(image), darkness, image, 1. - darkness, 0.)
 
 
-def draw_lines(image: cv.Mat, lines: List[Line2d], color: Tuple[int, int, int],
-               endpoints: bool = False, line_width: float = 0.004, opacity: int = 75) -> cv.Mat:
+def draw_lines(image: np.ndarray, lines: List[Line2d], color: Tuple[int, int, int], endpoints: bool = False,
+               line_width: float = 0.004, opacity: float = 0.75) -> np.ndarray:
     """
     Draws the given lines on the given image with the given color.
     Make sure that the lines are scaled to the image size.
@@ -273,9 +302,15 @@ def draw_lines(image: cv.Mat, lines: List[Line2d], color: Tuple[int, int, int],
     :param opacity: opacity of the lines (0-100)
     :return: image with the lines drawn on it
     """
-    assert image is not None, 'Image does not exist'
-    assert lines and len(lines) != 0, 'No lines to draw'
-    assert 0 <= opacity <= 100, 'Opacity must be between 0 and 100'
+    if image is None:
+        raise ValueError('Image does not exist')
+    if not (0. <= opacity <= 1.):
+        print('Opacity percentage must be between 0 and 1')
+        opacity = min(max(0., opacity), 1.)
+
+    # return the image if there are no lines to draw
+    if not lines:
+        return image
 
     # calculate the line width in pixels based on the image width
     line_width = round(line_width * image.shape[1])
@@ -295,11 +330,11 @@ def draw_lines(image: cv.Mat, lines: List[Line2d], color: Tuple[int, int, int],
             cv.circle(overlay, p2, line_width, color, -1)
 
     # draw the overlay on the image
-    return cv.addWeighted(overlay, opacity / 100, image, 1., 0.)
+    return cv.addWeighted(overlay, opacity, image, 1., 0.)
 
 
-def draw_mask(image: cv.Mat, mask: cv.Mat, color: Tuple[int, int, int], threshold: int = 30,
-              opacity: int = 75) -> cv.Mat:
+def draw_mask(image: np.ndarray, mask: np.ndarray, color: Tuple[int, int, int],
+              threshold: int = 30, opacity: float = 0.75) -> np.ndarray:
     """
     Draws the given mask on the given image.
 
@@ -307,24 +342,29 @@ def draw_mask(image: cv.Mat, mask: cv.Mat, color: Tuple[int, int, int], threshol
     :param mask: mask to draw
     :param color: color of the mask (in the same color space as the image)
     :param threshold: threshold of the mask (0-255)
-    :param opacity: opacity of the mask (0-100)
+    :param opacity: opacity of the mask (0-1)
     :return: image with the mask drawn on it
     """
-    assert image is not None, 'Image does not exist'
-    assert mask is not None, 'Mask does not exist'
-    assert 0 <= opacity <= 100, 'Opacity must be between 0 and 100'
+    if image is None:
+        raise ValueError('Image does not exist')
+    if not (0. <= opacity <= 1.):
+        print('Opacity percentage must be between 0 and 1')
+        opacity = min(max(0., opacity), 1.)
+
+    # return the image if there is no mask to draw
+    if mask is None:
+        return image
 
     # resize the mask
     mask = cv.resize(mask, (image.shape[1], image.shape[0]))
     # convert the mask to grayscale
     mask = cv.cvtColor(mask, cv.COLOR_RGB2GRAY)
     # threshold the mask
-    mask[mask < threshold] = 0
-    mask[mask >= threshold] = 1
+    mask = np.where(mask < threshold, 0, 1)
     # create overlay
     overlay = np.zeros_like(image)
     # draw mask on the overlay
     overlay[mask > 0] = color
 
     # draw the overlay on the image
-    return cv.addWeighted(overlay, opacity / 100, image, 1., 0.)
+    return cv.addWeighted(overlay, opacity, image, 1., 0.)
