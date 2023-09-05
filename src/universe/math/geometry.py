@@ -270,11 +270,11 @@ class YLine2dFunction(LineFunction):
         return f'YLine2dFunction(m={self.m}, c={self.c})'
 
     @property
-    def dir_vec(self) -> Point2d:
+    def unit_vec(self) -> Point2d:
         """
-        Calculates the normalized direction vector of the line.
+        Calculates the directional unit vector of the line.
 
-        :return: normalized direction vector.
+        :return: directional unit vector.
         """
         p1 = Point2d(0, self.c)
         p2 = Point2d(1, self(1))
@@ -323,9 +323,9 @@ class YLine2dFunction(LineFunction):
         if abs(point.y - self(point.x)) > eps:
             raise ValueError(f'Point {point} is not on line {self}')
 
-        dir_vec = self.dir_vec
+        unit_vec = self.unit_vec
 
-        return Point2d(point.x + dist * dir_vec.x, point.y + dist * dir_vec.y)
+        return Point2d(point.x + dist * unit_vec.x, point.y + dist * unit_vec.y)
 
     def intersection(self, line: Union[XLine2dFunction, 'YLine2dFunction']) -> Optional[Point2d]:
         """
