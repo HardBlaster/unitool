@@ -45,9 +45,6 @@ class _Layer(ABC):
 
         :param opacity: opacity of the layer (0-1)
         """
-        if not (0. <= opacity <= 1.):
-            print('Opacity must be between 0 and 1')
-            opacity = min(max(0., opacity), 1.)
         self._opacity = opacity
 
     @abstractmethod
@@ -155,9 +152,6 @@ class LayeredImage:
 
         :param darkness: percentage of darkness (0-1)
         """
-        if not (0. <= darkness <= 1.):
-            print('Darkness percentage must be between 0 and 1')
-            darkness = min(max(0., darkness), 1.)
         self._darkness = darkness
 
     def add_layer(self, layer: _Layer) -> None:
@@ -198,11 +192,9 @@ class LayeredImage:
         :param axis: whether to show the axis or not
         """
 
-        # add legend to plot
-        legend = []
-        for layer in self.layers:
-            if layer.name:
-                legend.append(mpatches.Patch(color=[x / 255 for x in layer.color], label=layer.name))
+        # create legend
+        legend = [mpatches.Patch(color=[x / 255 for x in layer.color], label=layer.name) for layer in self.layers
+                  if layer.name]
         if legend:
             plt.legend(handles=legend, loc='lower right')
 
@@ -282,8 +274,10 @@ def darken_image(image: np.ndarray, darkness: float = 0.5) -> np.ndarray:
     if image is None:
         raise ValueError('Image does not exist')
     if not (0. <= darkness <= 1.):
-        print('Darkness percentage must be between 0 and 1')
-        darkness = min(max(0., darkness), 1.)
+        new_darkness = min(max(0., darkness), 1.)
+        print('Darkness percentage must be between 0 and 1.'
+              f'The given value ({darkness}) will be interpreted as {new_darkness}.')
+        darkness = new_darkness
 
     return cv.addWeighted(np.zeros_like(image), darkness, image, 1. - darkness, 0.)
 
@@ -305,8 +299,10 @@ def draw_lines(image: np.ndarray, lines: List[Line2d], color: Tuple[int, int, in
     if image is None:
         raise ValueError('Image does not exist')
     if not (0. <= opacity <= 1.):
-        print('Opacity percentage must be between 0 and 1')
-        opacity = min(max(0., opacity), 1.)
+        new_opacity = min(max(0., opacity), 1.)
+        print('Opacity percentage must be between 0 and 1.'
+              f'The given value ({opacity}) will be interpreted as {new_opacity}.')
+        opacity = new_opacity
 
     # return the image if there are no lines to draw
     if not lines:
@@ -348,8 +344,10 @@ def draw_mask(image: np.ndarray, mask: np.ndarray, color: Tuple[int, int, int],
     if image is None:
         raise ValueError('Image does not exist')
     if not (0. <= opacity <= 1.):
-        print('Opacity percentage must be between 0 and 1')
-        opacity = min(max(0., opacity), 1.)
+        new_opacity = min(max(0., opacity), 1.)
+        print(f'Opacity percentage must be between 0 and 1.'
+              f'The given value ({opacity}) will be interpreted as {new_opacity}.')
+        opacity = new_opacity
 
     # return the image if there is no mask to draw
     if mask is None:
