@@ -69,8 +69,6 @@ class LinesLayer(_Layer):
         :param opacity: opacity of the lines (0-1)
         :param name: name of the layer
         """
-        if not lines:
-            print('No lines to draw' if name is None else f'No lines to draw on layer {name}')
         super().__init__(color, opacity, name)
         self.lines = lines
         self.endpoints = endpoints
@@ -102,8 +100,6 @@ class MaskLayer(_Layer):
         :param threshold: threshold of the mask (0-255)
         :param name: name of the layer
         """
-        if mask is None:
-            print('No mask to draw' if name is None else f'No mask to draw on layer {name}')
         super().__init__(color, opacity, name)
         self.mask = mask
         self.threshold = threshold
@@ -296,6 +292,11 @@ def draw_lines(image: np.ndarray, lines: List[Line2d], color: Tuple[int, int, in
     :param opacity: opacity of the lines (0-100)
     :return: image with the lines drawn on it
     """
+
+    # return the image if there are no lines to draw
+    if not lines:
+        return image
+
     if image is None:
         raise ValueError('Image does not exist')
     if not (0. <= opacity <= 1.):
@@ -303,10 +304,6 @@ def draw_lines(image: np.ndarray, lines: List[Line2d], color: Tuple[int, int, in
         print('Opacity percentage must be between 0 and 1.'
               f'The given value ({opacity}) will be interpreted as {new_opacity}.')
         opacity = new_opacity
-
-    # return the image if there are no lines to draw
-    if not lines:
-        return image
 
     # calculate the line width in pixels based on the image width
     line_width = round(line_width * image.shape[1])
@@ -341,6 +338,11 @@ def draw_mask(image: np.ndarray, mask: np.ndarray, color: Tuple[int, int, int],
     :param opacity: opacity of the mask (0-1)
     :return: image with the mask drawn on it
     """
+
+    # return the image if there is no mask to draw
+    if mask is None:
+        return image
+
     if image is None:
         raise ValueError('Image does not exist')
     if not (0. <= opacity <= 1.):
@@ -348,10 +350,6 @@ def draw_mask(image: np.ndarray, mask: np.ndarray, color: Tuple[int, int, int],
         print(f'Opacity percentage must be between 0 and 1.'
               f'The given value ({opacity}) will be interpreted as {new_opacity}.')
         opacity = new_opacity
-
-    # return the image if there is no mask to draw
-    if mask is None:
-        return image
 
     # resize the mask
     mask = cv.resize(mask, (image.shape[1], image.shape[0]))
